@@ -98,7 +98,7 @@ export default function Dashboard({ darkMode }) {
 
   return (
     <section className={`relative py-28 px-6 ${darkMode ? '' : ''}`}>
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto max-w-7xl">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -107,8 +107,8 @@ export default function Dashboard({ darkMode }) {
           transition={{ duration: 0.7 }}
           className="mb-14"
         >
-          <div className="section-label mb-4">Dashboard</div>
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="mb-4 section-label">Dashboard</div>
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <h2 className={`font-display font-700 leading-tight ${
               darkMode ? 'text-white' : 'text-slate-900'
             }`} style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
@@ -126,11 +126,11 @@ export default function Dashboard({ darkMode }) {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-60px' }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+          className="grid grid-cols-2 gap-4 mb-6 lg:grid-cols-4"
         >
           {stats.map((stat) => (
             <motion.div key={stat.label} variants={itemVariants}>
-              <Card darkMode={darkMode} className="p-5 group relative overflow-hidden">
+              <Card darkMode={darkMode} className="relative p-5 overflow-hidden group">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-4 ${stat.bg} ${stat.color}`}>
                   {stat.icon}
                 </div>
@@ -149,7 +149,7 @@ export default function Dashboard({ darkMode }) {
         </motion.div>
 
         {/* Main content row */}
-        <div className="grid lg:grid-cols-5 gap-6">
+        <div className="grid gap-6 lg:grid-cols-5">
           {/* Tasks panel */}
           <motion.div
             className="lg:col-span-3"
@@ -158,7 +158,7 @@ export default function Dashboard({ darkMode }) {
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7, delay: 0.1 }}
           >
-            <Card darkMode={darkMode} hover={false} className="p-6 h-full">
+            <Card darkMode={darkMode} hover={false} className="h-full p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className={`font-display font-600 text-lg ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                   Focus Tasks
@@ -261,7 +261,7 @@ export default function Dashboard({ darkMode }) {
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7, delay: 0.2 }}
           >
-            <Card darkMode={darkMode} hover={false} className="p-6 h-full">
+            <Card darkMode={darkMode} hover={false} className="h-full p-6">
               <h3 className={`font-display font-600 text-lg mb-1.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                 Weekly Activity
               </h3>
@@ -270,11 +270,11 @@ export default function Dashboard({ darkMode }) {
               </p>
 
               {/* Bar chart */}
-              <div className="flex items-end gap-2 h-32 mb-3">
+              <div className="flex items-end h-32 gap-2 mb-3">
                 {weekData.map((val, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                  <div key={i} className="flex flex-col items-center flex-1 gap-2">
                     <motion.div
-                      className="w-full rounded-lg relative overflow-hidden"
+                      className="relative w-full overflow-hidden rounded-lg"
                       style={{ height: `${val}%` }}
                       initial={{ scaleY: 0, originY: 1 }}
                       animate={{ scaleY: 1 }}
@@ -289,7 +289,7 @@ export default function Dashboard({ darkMode }) {
                         }}
                       />
                       {i === 6 && (
-                        <div className="absolute inset-0 shimmer-bg rounded-lg" />
+                        <div className="absolute inset-0 rounded-lg shimmer-bg" />
                       )}
                     </motion.div>
                   </div>
@@ -323,7 +323,7 @@ export default function Dashboard({ darkMode }) {
                     <div className={`text-xs font-mono uppercase tracking-wider mb-1 ${darkMode ? 'text-white/35' : 'text-slate-400'}`}>
                       vs last week
                     </div>
-                    <div className="font-display font-700 text-2xl text-emerald-400">
+                    <div className="text-2xl font-display font-700 text-emerald-400">
                       +18%
                     </div>
                   </div>
