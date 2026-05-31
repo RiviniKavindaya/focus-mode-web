@@ -1,8 +1,57 @@
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import api from '../lib/api'
+import ErrorAlert from '../components/ErrorAlert'
 
 export default function Login({ darkMode }) {
   const navigate = useNavigate()
+  
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+
+   // login handler
+  const handleLogin = async () => {
+    setLoading(true)
+    setError('')
+
+    try {
+      const res = await api.post('/login', {
+        email,
+        password,
+      })
+
+      // save token
+      localStorage.setItem('token', res.data.access_token)
+
+      // save user
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+
+      // redirect
+      navigate('/dashboard')
+
+    } catch (err) {
+      console.log('LOGIN ERROR:', err)
+
+        if (err.response) {
+            // backend responded with error
+            setError(err.response.data?.message || 'Invalid credentials')
+        } 
+        else if (err.request) {
+            // no response from server
+            setError('Server not responding. Try again later.')
+        } 
+        else {
+            // something else
+            setError('Something went wrong')
+        }
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className={`flex items-center justify-center min-h-screen px-6 ${
@@ -63,6 +112,8 @@ export default function Login({ darkMode }) {
               ? 'bg-white/5 border-white/10 text-white'
               : 'bg-white border-slate-200 text-slate-900'
           }`}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
 
         {/* Password input */}
@@ -74,12 +125,33 @@ export default function Login({ darkMode }) {
               ? 'bg-white/5 border-white/10 text-white'
               : 'bg-white border-slate-200 text-slate-900'
           }`}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
         />
 
-        {/* Login button */}
-        <button className="w-full py-3 font-semibold text-white rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 hover:scale-[1.02] transition">
-          Sign In
+        {/* Login Button */}
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          className="w-full py-3 font-semibold text-white rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 hover:scale-[1.02] transition disabled:opacity-50"
+        >
+          {loading ? 'Signing in...' : 'Sign In'}
         </button>
+       
+       <ErrorAlert message={error} />
+
+       <p className="mt-6 text-sm text-center">
+        <span className={darkMode ? "text-white/60" : "text-slate-500"}>
+            Don’t have an account?
+        </span>
+
+        <span
+            onClick={() => navigate('/register')}
+            className="ml-2 font-medium text-blue-500 cursor-pointer hover:text-blue-400"
+        >
+            Sign up
+        </span>
+        </p>
 
         {/* Back */}
         <button
@@ -88,6 +160,7 @@ export default function Login({ darkMode }) {
         >
           ← Back to Home
         </button>
+        
 
       </motion.div>
     </div>

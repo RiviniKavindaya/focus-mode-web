@@ -57,7 +57,7 @@ const INTENSITIES = [
   { key: 'ultra', label: 'Ultra', desc: '50 min sessions', color: '#ef4444' },
 ]
 
-export default function Settings({
+export default function SettingsDemo({
   darkMode, setDarkMode,
   soundEnabled, setSoundEnabled,
   focusIntensity, setFocusIntensity,
@@ -116,7 +116,7 @@ export default function Settings({
   ]
 
   return (
-    <section className="relative py-28 px-6">
+    <section className="relative px-6 py-28">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <motion.div
@@ -126,7 +126,7 @@ export default function Settings({
           transition={{ duration: 0.7 }}
           className="mb-14"
         >
-          <div className="section-label mb-4">Preferences</div>
+          <div className="mb-4 section-label">Preferences</div>
           <h2 className={`font-display font-700 leading-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}
             style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
             Settings

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import Card from './Card'
+import Card from '../components/Card'
 
 const tasks = [
   { id: 1, label: 'Design system documentation', progress: 78, tag: 'Design', done: false },
@@ -77,7 +77,7 @@ const stats = [
 const weekData = [65, 80, 45, 90, 70, 55, 88]
 const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
-export default function Dashboard({ darkMode }) {
+export default function DashboardDemo({ darkMode }) {
   const [completedIds, setCompletedIds] = useState([3])
 
   const toggleTask = (id) => {

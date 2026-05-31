@@ -2,16 +2,13 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
-import Navbar from './components/Navbar'
-import Hero from './components/Hero'
-import Dashboard from './components/Dashboard'
-import Timer from './components/Timer'
-import Motivation from './components/Motivation'
-import Settings from './components/Settings'
-import Footer from './components/Footer'
 import BackgroundBlobs from './components/BackgroundBlobs'
-
+import Home from './pages/Home'
 import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
+import Register from './pages/Register'
+import Settings from './pages/Settings'
+import AppLayout from './components/layout/AppLayout'
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(true)
@@ -22,12 +19,6 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
     document.documentElement.classList.toggle('light', !darkMode)
-
-    if (darkMode) {
-      document.body.style.background = '#040407'
-    } else {
-      document.body.style.background = '#f8fafc'
-    }
   }, [darkMode])
 
   return (
@@ -38,77 +29,62 @@ export default function App() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className={`relative min-h-screen transition-colors duration-700 ${
+          className={`relative min-h-screen ${
             darkMode ? 'bg-obsidian-950 text-white' : 'bg-slate-50 text-slate-900'
           }`}
         >
-          {/* Ambient background */}
+          {/* Background */}
           <BackgroundBlobs darkMode={darkMode} />
 
-          {/* Noise texture overlay */}
-          <div
-            className="fixed inset-0 pointer-events-none z-0 opacity-[0.03]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-            }}
-          />
-
-          {/* CONTENT */}
           <div className="relative z-10">
-           
-
             <main>
               <Routes>
 
-                {/* HOME PAGE */}
+                {/* HOME */}
                 <Route
                   path="/"
                   element={
-                    <>
-                    <section id="navigation">
-                      <Navbar
-                        darkMode={darkMode}
-                        setDarkMode={setDarkMode}
-                        activeSection={activeSection}
-                        setActiveSection={setActiveSection}
-                      />
-                    </section>
-                      <section id="hero">
-                        <Hero darkMode={darkMode} />
-                      </section>
-
-                      <section id="dashboard">
-                        <Dashboard darkMode={darkMode} />
-                      </section>
-
-                      <section id="timer">
-                        <Timer darkMode={darkMode} />
-                      </section>
-
-                      <section id="motivation">
-                        <Motivation darkMode={darkMode} />
-                      </section>
-
-                      <section id="settings">
-                        <Settings
-                          darkMode={darkMode}
-                          setDarkMode={setDarkMode}
-                          soundEnabled={soundEnabled}
-                          setSoundEnabled={setSoundEnabled}
-                          focusIntensity={focusIntensity}
-                          setFocusIntensity={setFocusIntensity}
-                        />
-                      </section>
-
-                      <Footer darkMode={darkMode} />
-                    </>
+                    <Home
+                      darkMode={darkMode}
+                      setDarkMode={setDarkMode}
+                      soundEnabled={soundEnabled}
+                      setSoundEnabled={setSoundEnabled}
+                      focusIntensity={focusIntensity}
+                      setFocusIntensity={setFocusIntensity}
+                      activeSection={activeSection}
+                      setActiveSection={setActiveSection}
+                    />
                   }
                 />
 
-                {/* LOGIN PAGE */}
+                {/* LOGIN */}
                 <Route
                   path="/login"
                   element={<Login darkMode={darkMode} />}
+                />
+                {/* DASHBOARD */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <AppLayout darkMode={darkMode}>
+                      <Dashboard darkMode={darkMode} />
+                    </AppLayout>
+                  }
+                />
+                {/* REGISTER */}
+                <Route
+                  path="/register"
+                  element={<Register darkMode={darkMode} />}
+                />
+                
+                {/* SETTINGS */}
+                <Route
+                  path="/settings"
+                  element={
+                    <AppLayout darkMode={darkMode}>
+                      <Settings darkMode={darkMode} />
+                    </AppLayout>
+                  }
                 />
 
               </Routes>
