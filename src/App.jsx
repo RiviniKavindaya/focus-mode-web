@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard'
 import Register from './pages/Register'
 import Settings from './pages/Settings'
 import AppLayout from './components/layout/AppLayout'
+import AuthCallback from './pages/AuthCallback'
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(true)
@@ -61,6 +62,11 @@ export default function App() {
                 <Route
                   path="/login"
                   element={<Login darkMode={darkMode} />}
+                />
+                {/* AUTH CALLBACK */}
+                <Route
+                  path="/auth/callback"
+                  element={<AuthCallback />}
                 />
                 {/* DASHBOARD */}
                 <Route

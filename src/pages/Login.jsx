@@ -80,6 +80,9 @@ export default function Login({ darkMode }) {
 
         {/* Google Login */}
         <button
+          onClick={() => {
+            window.location.href = `${import.meta.env.VITE_API_URL}/auth/google/redirect`
+          }}
           className={`w-full flex items-center justify-center gap-3 py-3 rounded-xl border font-medium transition ${
             darkMode
               ? 'border-white/10 bg-white/5 hover:bg-white/10'
