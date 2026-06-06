@@ -34,9 +34,9 @@ export default function Home({
       </section>
 
       {/* DASHBOARD */}
-      <section id="dashboard">
+      {/* <section id="dashboard">
         <Dashboard darkMode={darkMode} />
-      </section>
+      </section> */}
 
       {/* TIMER */}
       <section id="timer">
@@ -49,7 +49,7 @@ export default function Home({
       </section>
 
       {/* SETTINGS */}
-      <section id="settings">
+      {/* <section id="settings">
         <Settings
           darkMode={darkMode}
           setDarkMode={setDarkMode}
@@ -58,7 +58,7 @@ export default function Home({
           focusIntensity={focusIntensity}
           setFocusIntensity={setFocusIntensity}
         />
-      </section>
+      </section> */}
 
       {/* FOOTER */}
       <Footer darkMode={darkMode} />
