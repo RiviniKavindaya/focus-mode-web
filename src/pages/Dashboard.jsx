@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
+// Hook
+import useTasks from "../hooks/useTasks";
 
-// Sub-components
+// Components
 import TaskOverlay from "../components/dashboard/TaskOverlay";
 import FocusSessionCard from "../components/dashboard/FocusSessionCard";
 import ActiveTaskCard from "../components/dashboard/ActiveTaskCard";
@@ -12,84 +14,112 @@ import CompletedTodayCard from "../components/dashboard/CompletedTodayCard";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 
 // Constants & Styles
-import { INIT_QUEUE, COMPLETED, SPRINT } from "../constants/dashboardConstants";
+import { SPRINT } from "../constants/dashboardConstants";
 import { globalStyles } from "../styles/dashboardStyles";
 
-export default function Dashboard({ darkMode }) {
-  const [queue, setQueue] = useState(INIT_QUEUE);
-  const [activeTask, setActive] = useState(INIT_QUEUE.find((t) => t.active));
-  const [timerSecs, setTimer] = useState(SPRINT);
-  const [totalSecs, setTotal] = useState(SPRINT);
-  const [running, setRunning] = useState(false);
-  const [sound, setSound] = useState("rain");
-  const [volume, setVolume] = useState(62);
-  const [overlay, setOverlay] = useState(false);
-  const iv = useRef(null);
+export default function Dashboard() {
+  const {
+    queue,
+    completedToday,
+    activeTask,
+    loading,
+    error,
+    loadTasks,
+    addTask,
+    startTask,
+    pauseTask,
+    completeTask,
+  } = useTasks();
 
+  const [timerSecs, setTimerSecs] = useState(SPRINT);
+  const [totalSecs, setTotalSecs] = useState(SPRINT);
+  const [running, setRunning] = useState(false);
+
+  const [sound, setSound] = useState("rain");
+  const [volume, setVolume] = useState(60);
+  const [overlay, setOverlay] = useState(false);
+
+  const intervalRef = useRef(null);
+
+  // TIMER LOGIC
   useEffect(() => {
     if (running) {
-      iv.current = setInterval(() => {
-        setTimer((s) => {
-          if (s <= 1) {
-            clearInterval(iv.current);
+      intervalRef.current = setInterval(() => {
+        setTimerSecs((prev) => {
+          if (prev <= 1) {
+            clearInterval(intervalRef.current);
             setRunning(false);
             return 0;
           }
-          return s - 1;
+          return prev - 1;
         });
       }, 1000);
-    } else clearInterval(iv.current);
-    return () => clearInterval(iv.current);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+
+    return () => clearInterval(intervalRef.current);
   }, [running]);
 
-  const sprintCount = activeTask ? Math.ceil(activeTask.mins / 25) : 1;
+  const sprintCount = activeTask ? Math.ceil(activeTask.estimated_minutes / 25) : 1;
 
-  function startTask(task) {
-    setQueue((q) => q.map((t) => ({ ...t, active: t.id === task.id })));
-    setActive(task);
-    const s = Math.min(task.mins, 25) * 60;
-    setTimer(s);
-    setTotal(s);
+  // START TASK (API)
+  const handleStartTask = async (task) => {
+    await startTask(task.id);
+
+    const seconds = Math.min(task.estimated_minutes, 25) * 60;
+    setTimerSecs(seconds);
+    setTotalSecs(seconds);
     setRunning(true);
-  }
+  };
 
-  function addToQueue(data) {
-    setQueue((q) => [
-      ...q,
-      { id: Date.now(), label: data.label, mins: data.mins, done: false, active: false },
-    ]);
-  }
+  // ADD TASK (API)
+  const handleAddTask = async (data) => {
+    await addTask(data.title, data.estimated_minutes, false);
+    await loadTasks();
+  };
 
-  function addAndStart(data) {
-    const t = { id: Date.now(), label: data.label, mins: data.mins, done: false, active: true };
-    setQueue((q) => [...q.map((x) => ({ ...x, active: false })), t]);
-    setActive(t);
-    const s = Math.min(data.mins, 25) * 60;
-    setTimer(s);
-    setTotal(s);
-    setRunning(true);
-  }
+  // ADD + START TASK
+  const handleAddAndStart = async (data) => {
+    await addTask(data.title, data.estimated_minutes, true);
+    await loadTasks();
 
-  function handleResetTimer() {
+    const refreshed = await useTasks().loadTasks;
+    // optional: reload ensures activeTask is updated from backend
+  };
+
+  const handleResetTimer = () => {
     setRunning(false);
-    setTimer(totalSecs);
-  }
+    setTimerSecs(totalSecs);
+  };
 
   return (
     <>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+      <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet"
+      />
+
       <style>{globalStyles}</style>
 
-      <div style={{ fontFamily: "'DM Sans', sans-serif", color: "#e2e8f0", minHeight: "100vh", padding: "20px 24px 32px", boxSizing: "border-box" }}>
-        
+      <div
+        style={{
+          fontFamily: "'DM Sans', sans-serif",
+          color: "#e2e8f0",
+          minHeight: "100vh",
+          padding: "20px 24px 32px",
+          boxSizing: "border-box",
+        }}
+      >
         <DashboardHeader />
 
-        {/* Main Grid Layout */}
+        {loading && <p>Loading tasks...</p>}
+        {error && <p style={{ color: "red" }}>{error.message}</p>}
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 20 }}>
-          
-          {/* LEFT COLUMN */}
+          {/* LEFT */}
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            <FocusSessionCard 
+            <FocusSessionCard
               activeTask={activeTask}
               timerSecs={timerSecs}
               totalSecs={totalSecs}
@@ -98,13 +128,15 @@ export default function Dashboard({ darkMode }) {
               setRunning={setRunning}
               onReset={handleResetTimer}
             />
-            <ActiveTaskCard 
+
+            <ActiveTaskCard
               activeTask={activeTask}
               running={running}
               sprintCount={sprintCount}
               setRunning={setRunning}
             />
-            <AmbientSoundCard 
+
+            <AmbientSoundCard
               sound={sound}
               setSound={setSound}
               volume={volume}
@@ -112,26 +144,26 @@ export default function Dashboard({ darkMode }) {
             />
           </div>
 
-          {/* RIGHT COLUMN */}
+          {/* RIGHT */}
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             <ProgressCard />
-            <TaskQueueCard 
+
+            <TaskQueueCard
               queue={queue}
-              setQueue={setQueue}
-              startTask={startTask}
+              startTask={handleStartTask}
               onAddClick={() => setOverlay(true)}
             />
-            <CompletedTodayCard completedList={COMPLETED} />
-          </div>
 
+            <CompletedTodayCard completedList={completedToday} />
+          </div>
         </div>
       </div>
 
       {overlay && (
         <TaskOverlay
           onClose={() => setOverlay(false)}
-          onAddQueue={addToQueue}
-          onAddStart={addAndStart}
+          onAddQueue={handleAddTask}
+          onAddStart={handleAddAndStart}
         />
       )}
     </>
