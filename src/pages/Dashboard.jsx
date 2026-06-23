@@ -13,8 +13,7 @@ import TaskQueueCard from "../components/dashboard/TaskQueueCard";
 import CompletedTodayCard from "../components/dashboard/CompletedTodayCard";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 
-// Constants & Styles
-import { SPRINT } from "../constants/dashboardConstants";
+// Styles
 import { globalStyles } from "../styles/dashboardStyles";
 
 export default function Dashboard() {
@@ -31,8 +30,8 @@ export default function Dashboard() {
     completeTask,
   } = useTasks();
 
-  const [timerSecs, setTimerSecs] = useState(SPRINT);
-  const [totalSecs, setTotalSecs] = useState(SPRINT);
+  const [timerSecs, setTimerSecs] = useState(0);
+  const [totalSecs, setTotalSecs] = useState(0);
   const [running, setRunning] = useState(false);
 
   const [sound, setSound] = useState("rain");
@@ -41,53 +40,108 @@ export default function Dashboard() {
 
   const intervalRef = useRef(null);
 
-  // TIMER LOGIC
+  // =========================
+  // SYNC WITH BACKEND TASK
+  // =========================
   useEffect(() => {
-    if (running) {
-      intervalRef.current = setInterval(() => {
-        setTimerSecs((prev) => {
-          if (prev <= 1) {
-            clearInterval(intervalRef.current);
-            setRunning(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    if (activeTask) {
+      setTotalSecs((activeTask.sprint_duration || 25) * 60);
+      setTimerSecs(activeTask.current_sprint_seconds ?? (activeTask.sprint_duration * 60));
+      setRunning(activeTask.status === "active");
     } else {
+      setTimerSecs(0);
+      setTotalSecs(0);
+      setRunning(false);
+    }
+  }, [activeTask]);
+
+  // =========================
+  // TIMER ENGINE
+  // =========================
+  useEffect(() => {
+    if (!running) {
       clearInterval(intervalRef.current);
+      return;
     }
 
+    intervalRef.current = setInterval(() => {
+      setTimerSecs((prev) => {
+        if (prev <= 1) {
+          clearInterval(intervalRef.current);
+          setRunning(false);
+
+          if (activeTask) {
+            completeTask(activeTask.id, { was_sprint_finished: true });
+          }
+
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
     return () => clearInterval(intervalRef.current);
-  }, [running]);
+  }, [running, activeTask]);
 
-  const sprintCount = activeTask ? Math.ceil(activeTask.estimated_minutes / 25) : 1;
+  // =========================
+  // SPRINT COUNT (FROM BACKEND)
+  // =========================
+  const sprintCount = activeTask
+    ? Math.ceil(activeTask.estimated_minutes / activeTask.sprint_duration)
+    : 1;
 
-  // START TASK (API)
+  // =========================
+  // PLAY / PAUSE (BACKEND SYNC)
+  // =========================
+  const handleTogglePlayPause = async () => {
+    if (!activeTask) return;
+
+    if (running) {
+      setRunning(false);
+      await pauseTask(activeTask.id);
+    } else {
+      setRunning(true);
+      await startTask(activeTask.id);
+    }
+  };
+
+  // =========================
+  // START TASK
+  // =========================
   const handleStartTask = async (task) => {
     await startTask(task.id);
-
-    const seconds = Math.min(task.estimated_minutes, 25) * 60;
-    setTimerSecs(seconds);
-    setTotalSecs(seconds);
-    setRunning(true);
   };
 
-  // ADD TASK (API)
+  // =========================
+  // ADD TASK
+  // =========================
   const handleAddTask = async (data) => {
     await addTask(data.title, data.estimated_minutes, false);
-    await loadTasks();
+    setOverlay(false);
   };
 
-  // ADD + START TASK
   const handleAddAndStart = async (data) => {
     await addTask(data.title, data.estimated_minutes, true);
-    await loadTasks();
-
-    const refreshed = await useTasks().loadTasks;
-    // optional: reload ensures activeTask is updated from backend
+    setOverlay(false);
   };
 
+  // =========================
+  // END SESSION (IMPORTANT FIX)
+  // =========================
+  const handleEndSession = async () => {
+    if (!activeTask) return;
+
+    setRunning(false);
+    await completeTask(activeTask.id, {
+      was_sprint_finished: false,
+    });
+
+    await loadTasks();
+  };
+
+  // =========================
+  // RESET TIMER ONLY
+  // =========================
   const handleResetTimer = () => {
     setRunning(false);
     setTimerSecs(totalSecs);
@@ -108,12 +162,11 @@ export default function Dashboard() {
           color: "#e2e8f0",
           minHeight: "100vh",
           padding: "20px 24px 32px",
-          boxSizing: "border-box",
         }}
       >
         <DashboardHeader />
 
-        {loading && <p>Loading tasks...</p>}
+        {loading && <p>Loading...</p>}
         {error && <p style={{ color: "red" }}>{error.message}</p>}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 20 }}>
@@ -125,7 +178,7 @@ export default function Dashboard() {
               totalSecs={totalSecs}
               running={running}
               sprintCount={sprintCount}
-              setRunning={setRunning}
+              setRunning={handleTogglePlayPause}
               onReset={handleResetTimer}
             />
 
@@ -133,7 +186,8 @@ export default function Dashboard() {
               activeTask={activeTask}
               running={running}
               sprintCount={sprintCount}
-              setRunning={setRunning}
+              setRunning={handleTogglePlayPause}
+              onEndSession={handleEndSession}
             />
 
             <AmbientSoundCard

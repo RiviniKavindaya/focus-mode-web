@@ -1,3 +1,4 @@
+import React from "react";
 import CircularTimer from "./CircularTimer";
 import { Icon, IC } from "./Icons";
 import { cardStyles, sectionTitleStyles } from "../../styles/dashboardStyles";
@@ -65,7 +66,7 @@ export default function FocusSessionCard({
               >
                 Active Focus Target:{" "}
                 <span style={{ color: "rgba(255,255,255,0.62)" }}>
-                  Explicit time estimator
+                  Sprint Time Management Engine
                 </span>
               </div>
 
@@ -93,27 +94,36 @@ export default function FocusSessionCard({
                 <span style={{ color: "rgba(255,255,255,0.6)" }}>
                   {activeTask.estimated_minutes} min
                 </span>{" "}
-                | Session Progress: #1 of {sprintCount} (25m sprints)
+                | Session Progress: #{activeTask.current_sprint_number} of {sprintCount} ({activeTask.sprint_duration}m sprints)
               </div>
 
-              {/* SPRINT DOTS */}
+              {/* DYNAMIC SPRINT DOTS */}
               <div style={{ display: "flex", gap: 7, marginBottom: 16 }}>
                 {Array.from({
                   length: Math.min(sprintCount, 5),
-                }).map((_, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      background:
-                        i === 0
-                          ? "#2dd4bf"
-                          : "rgba(255,255,255,0.15)",
-                    }}
-                  />
-                ))}
+                }).map((_, i) => {
+                  const sprintIndex = i + 1;
+                  let dotColor = "rgba(255,255,255,0.15)"; // Default unreached blocks
+                  
+                  if (sprintIndex < activeTask.current_sprint_number) {
+                    dotColor = "#2dd4bf"; // Completed historic sprints
+                  } else if (sprintIndex === activeTask.current_sprint_number) {
+                    dotColor = running ? "#2dd4bf" : "rgba(45, 212, 191, 0.4)"; // Bright highlight if running, soft glow if paused
+                  }
+
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: dotColor,
+                        transition: "background 0.3s ease",
+                      }}
+                    />
+                  );
+                })}
               </div>
             </>
           ) : (
@@ -131,7 +141,7 @@ export default function FocusSessionCard({
           {/* CONTROLS */}
           <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
             <button
-              onClick={() => setRunning((r) => !r)}
+              onClick={setRunning} // Uses combined state handler tied to backend controllers
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -152,7 +162,7 @@ export default function FocusSessionCard({
             </button>
 
             <button
-              onClick={() => setRunning(false)}
+              onClick={onReset} // Triggers transaction engine rollback inside database mapping
               style={{
                 display: "flex",
                 alignItems: "center",

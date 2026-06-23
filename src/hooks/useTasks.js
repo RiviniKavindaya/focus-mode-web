@@ -5,25 +5,22 @@ export default function useTasks() {
   const [queue, setQueue] = useState([]);
   const [completedToday, setCompletedToday] = useState([]);
   const [activeTask, setActiveTask] = useState(null);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // FETCH & STATE MAPPER
   const loadTasks = async () => {
     try {
       setLoading(true);
-
       const { data } = await taskService.getTasks();
 
       setQueue(data.queue);
       setCompletedToday(data.completed_today);
 
-      const active = data.queue.find(
-        (task) => task.status === "active"
-      );
-
+      // Extract the singular active running task instance from the queue array
+      const active = data.queue.find((task) => task.status === "active");
       setActiveTask(active || null);
-
+      
       setError(null);
     } catch (err) {
       console.error(err);
@@ -33,47 +30,41 @@ export default function useTasks() {
     }
   };
 
-  const addTask = async (
-    title,
-    estimatedMinutes,
-    startNow = false
-  ) => {
+  // ADD TASK
+  const addTask = async (title, estimatedMinutes, startNow = false) => {
     await taskService.createTask({
       title,
       estimated_minutes: estimatedMinutes,
       start_now: startNow,
     });
-
     await loadTasks();
   };
 
+  // START / RESUME TASK
   const startTask = async (taskId) => {
     await taskService.startTask(taskId);
     await loadTasks();
   };
 
+  // PAUSE TASK
   const pauseTask = async (taskId) => {
     await taskService.pauseTask(taskId);
     await loadTasks();
   };
 
-  const completeTask = async (
-    taskId,
-    actualMinutes = 0
-  ) => {
-    await taskService.completeTask(
-      taskId,
-      actualMinutes
-    );
-
+  // COMPLETE / RECORD SPRINT TASK
+  const completeTask = async (taskId, payload = { was_sprint_finished: false }) => {
+    await taskService.completeTask(taskId, payload);
     await loadTasks();
   };
 
+  // DELETE TASK
   const deleteTask = async (taskId) => {
     await taskService.deleteTask(taskId);
     await loadTasks();
   };
 
+  // INITIAL LOAD RUNNER
   useEffect(() => {
     loadTasks();
   }, []);
@@ -82,12 +73,9 @@ export default function useTasks() {
     queue,
     completedToday,
     activeTask,
-
     loading,
     error,
-
     loadTasks,
-
     addTask,
     startTask,
     pauseTask,

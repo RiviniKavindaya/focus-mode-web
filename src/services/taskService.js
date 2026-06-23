@@ -17,10 +17,8 @@ export const taskService = {
     return api.post(`/tasks/${taskId}/pause`);
   },
 
-  completeTask(taskId, actualMinutes = 0) {
-    return api.post(`/tasks/${taskId}/complete`, {
-      actual_minutes: actualMinutes,
-    });
+  completeTask(taskId, payload = {}) {
+    return api.post(`/tasks/${taskId}/complete`, payload);
   },
 
   deleteTask(taskId) {

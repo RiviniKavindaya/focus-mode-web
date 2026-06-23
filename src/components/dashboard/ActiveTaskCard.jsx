@@ -6,6 +6,7 @@ export default function ActiveTaskCard({
   running,
   sprintCount,
   setRunning,
+  onEndSession,
 }) {
   return (
     <div style={cardStyles}>
@@ -32,7 +33,7 @@ export default function ActiveTaskCard({
           >
             Active Focus Target:{" "}
             <span style={{ color: "rgba(255,255,255,0.55)" }}>
-              Explicit time estimator
+              Sprint Time Management Engine
             </span>
           </span>
         </div>
@@ -50,7 +51,7 @@ export default function ActiveTaskCard({
         </button>
       </div>
 
-      {/* ACTIVE TASK */}
+      {/* ACTIVE TASK BODY */}
       {activeTask ? (
         <div
           style={{
@@ -93,7 +94,7 @@ export default function ActiveTaskCard({
             </span>
           </div>
 
-          {/* INFO */}
+          {/* SPRINT METRIC DESCRIPTION */}
           <div
             style={{
               fontSize: 12,
@@ -101,14 +102,13 @@ export default function ActiveTaskCard({
               marginBottom: 14,
             }}
           >
-            Estimate Target: {activeTask.estimated_minutes} min | Session Progress:
-            #1 of {sprintCount} (25m sprints)
+            Estimate Target: {activeTask.estimated_minutes} min | Session Progress: #{activeTask.current_sprint_number} of {sprintCount} ({activeTask.sprint_duration}m sprints)
           </div>
 
           {/* ACTIONS */}
           <div style={{ display: "flex", gap: 9 }}>
             <button
-              onClick={() => setRunning((r) => !r)}
+              onClick={setRunning}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -129,7 +129,7 @@ export default function ActiveTaskCard({
             </button>
 
             <button
-              onClick={() => setRunning(false)}
+              onClick={onEndSession}
               style={{
                 display: "flex",
                 alignItems: "center",
