@@ -1,19 +1,21 @@
 import { Howl } from 'howler';
 
-// Sound URLs from free sources (CC0/Creative Commons)
+// Using reliable CDN audio sources with proper CORS headers
 const SOUND_URLS = {
   rain: [
+    'https://assets.mixkit.co/active_storage/sfx/2403/2403-preview.mp3',
     'https://cdn.pixabay.com/download/audio/2021/08/04/audio_1808fbf5e5.mp3',
-    'https://www.soundly.com/sounds/heavy-rain-loop'
   ],
   birds: [
+    'https://assets.mixkit.co/active_storage/sfx/2428/2428-preview.mp3',
     'https://cdn.pixabay.com/download/audio/2022/03/15/audio_4180aff4a7.mp3',
   ],
   noise: [
+    'https://assets.mixkit.co/active_storage/sfx/2405/2405-preview.mp3',
     'https://cdn.pixabay.com/download/audio/2021/08/04/audio_0e33eb141f.mp3',
   ],
   lofi: [
-    'https://cdn.pixabay.com/download/audio/2021/08/04/audio_d42467d84f.mp3',
+    'https://assets.mixkit.co/active_storage/sfx/2425/2425-preview.mp3',
   ],
 };
 
@@ -30,7 +32,14 @@ class SoundService {
         src: urls,
         loop: true,
         volume: 0.5,
-        preload: false,
+        preload: 'metadata',
+        autoplay: false,
+        onloaderror: (id, error) => {
+          console.error(`Error loading ${soundId}:`, error);
+        },
+        onload: () => {
+          console.log(`${soundId} loaded successfully`);
+        },
       });
     });
   }
@@ -47,9 +56,16 @@ class SoundService {
     }
 
     const sound = this.sounds[soundId];
-    if (sound && !sound.playing()) {
-      sound.play();
-      this.currentSound = soundId;
+    if (sound) {
+      try {
+        if (!sound.playing()) {
+          sound.play();
+          this.currentSound = soundId;
+          console.log(`Playing ${soundId}`);
+        }
+      } catch (e) {
+        console.error(`Error playing ${soundId}:`, e);
+      }
     }
   }
 
@@ -85,11 +101,7 @@ class SoundService {
     // Volume is 0-100, Howler uses 0-1
     const normalizedVolume = Math.max(0, Math.min(1, volume / 100));
     
-    if (this.sounds[soundId]) {
-      this.sounds[soundId].volume(normalizedVolume);
-    }
-
-    // Also set for all sounds to keep them in sync
+    // Set volume for all sounds to keep them in sync
     Object.values(this.sounds).forEach(sound => {
       sound.volume(normalizedVolume);
     });
