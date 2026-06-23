@@ -1,8 +1,31 @@
+import { useEffect } from "react";
 import { Icon, IC } from "./Icons";
 import { SOUNDS } from "../../constants/dashboardConstants";
 import { cardStyles, sectionTitleStyles } from "../../styles/dashboardStyles";
+import { soundService } from "../../lib/soundService";
 
 export default function AmbientSoundCard({ sound, setSound, volume, setVolume }) {
+  // Play sound when selected
+  useEffect(() => {
+    if (sound === "none") {
+      soundService.stopAll();
+    } else {
+      soundService.play(sound);
+    }
+  }, [sound]);
+
+  // Update volume when changed
+  useEffect(() => {
+    soundService.setVolume(sound, volume);
+  }, [volume, sound]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      soundService.stopAll();
+    };
+  }, []);
+
   return (
     <div style={cardStyles}>
       <div style={sectionTitleStyles}>Ambient Sound</div>
@@ -18,7 +41,7 @@ export default function AmbientSoundCard({ sound, setSound, volume, setVolume })
           }}>
             <Icon d={IC[s.icon]} size={18} />
             <span>{s.label}</span>
-            {sound === s.id && s.id !== "none" && <span style={{ fontSize: 10 }}>⏸</span>}
+            {sound === s.id && s.id !== "none" && <span style={{ fontSize: 10 }}>🔊</span>}
           </button>
         ))}
       </div>
