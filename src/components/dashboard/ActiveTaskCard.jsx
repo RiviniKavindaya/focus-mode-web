@@ -102,7 +102,7 @@ export default function ActiveTaskCard({
               marginBottom: 14,
             }}
           >
-            Estimate Target: {activeTask.estimated_minutes} min | Session Progress: #{activeTask.current_sprint_number} of {sprintCount} ({activeTask.sprint_duration}m sprints)
+            Estimate Target: {activeTask.estimated_minutes} min | Session Progress: #{activeTask.completed_sprints + 1} of {sprintCount} ({activeTask.sprint_duration_minutes}m sprints)
           </div>
 
           {/* ACTIONS */}

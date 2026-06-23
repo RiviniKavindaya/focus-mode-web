@@ -15,7 +15,21 @@ export default function useTasks() {
       const { data } = await taskService.getTasks();
 
       setQueue(data.queue);
-      setCompletedToday(data.completed_today);
+      
+      // Transform completed tasks for proper UI display
+      const formattedCompleted = data.completed_today.map(task => {
+        const completedDate = new Date(task.completed_at);
+        const timeStr = completedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        return {
+          ...task,
+          label: task.title,
+          seg: task.completed_sprints,
+          time: timeStr,
+          dur: `${task.actual_minutes}m`,
+        };
+      });
+      setCompletedToday(formattedCompleted);
 
       // Extract the singular active running task instance from the queue array
       const active = data.queue.find((task) => task.status === "active");

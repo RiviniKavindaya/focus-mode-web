@@ -5,6 +5,7 @@ import useTasks from "../hooks/useTasks";
 
 // Components
 import TaskOverlay from "../components/dashboard/TaskOverlay";
+import TaskSwitchModal from "../components/dashboard/TaskSwitchModal";
 import FocusSessionCard from "../components/dashboard/FocusSessionCard";
 import ActiveTaskCard from "../components/dashboard/ActiveTaskCard";
 import AmbientSoundCard from "../components/dashboard/AmbientSoundCard";
@@ -37,16 +38,40 @@ export default function Dashboard() {
   const [sound, setSound] = useState("rain");
   const [volume, setVolume] = useState(60);
   const [overlay, setOverlay] = useState(false);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
+  const [pendingNewTask, setPendingNewTask] = useState(null);
+  const [prevTaskId, setPrevTaskId] = useState(null);
 
   const intervalRef = useRef(null);
+
+  // Auto-close overlay when active task starts
+  useEffect(() => {
+    if (activeTask && overlay) {
+      setOverlay(false);
+    }
+    
+    // Track if task switched (task ID changed)
+    if (activeTask?.id && prevTaskId && activeTask.id !== prevTaskId) {
+      // Task was switched - this is expected
+    }
+    setPrevTaskId(activeTask?.id || null);
+  }, [activeTask]);
 
   // =========================
   // SYNC WITH BACKEND TASK
   // =========================
   useEffect(() => {
     if (activeTask) {
-      setTotalSecs((activeTask.sprint_duration || 25) * 60);
-      setTimerSecs(activeTask.current_sprint_seconds ?? (activeTask.sprint_duration * 60));
+      const sprintDuration = (activeTask.sprint_duration_minutes || 25) * 60;
+      setTotalSecs(sprintDuration);
+      
+      // If current_sprint_seconds is 0 (fresh sprint), start with full duration
+      // Otherwise use the current progress
+      const timerValue = activeTask.current_sprint_seconds > 0 
+        ? activeTask.current_sprint_seconds 
+        : sprintDuration;
+      
+      setTimerSecs(timerValue);
       setRunning(activeTask.status === "active");
     } else {
       setTimerSecs(0);
@@ -59,7 +84,7 @@ export default function Dashboard() {
   // TIMER ENGINE
   // =========================
   useEffect(() => {
-    if (!running) {
+    if (!running || !activeTask) {
       clearInterval(intervalRef.current);
       return;
     }
@@ -70,9 +95,8 @@ export default function Dashboard() {
           clearInterval(intervalRef.current);
           setRunning(false);
 
-          if (activeTask) {
-            completeTask(activeTask.id, { was_sprint_finished: true });
-          }
+          pauseTask(activeTask.id);
+          alert("Sprint completed! You can now review and complete the task.");
 
           return 0;
         }
@@ -81,13 +105,13 @@ export default function Dashboard() {
     }, 1000);
 
     return () => clearInterval(intervalRef.current);
-  }, [running, activeTask]);
+  }, [running, activeTask, pauseTask]);
 
   // =========================
   // SPRINT COUNT (FROM BACKEND)
   // =========================
   const sprintCount = activeTask
-    ? Math.ceil(activeTask.estimated_minutes / activeTask.sprint_duration)
+    ? Math.ceil(activeTask.estimated_minutes / activeTask.sprint_duration_minutes)
     : 1;
 
   // =========================
@@ -121,8 +145,28 @@ export default function Dashboard() {
   };
 
   const handleAddAndStart = async (data) => {
+    // If there's an active task, show modal instead of browser confirm
+    if (activeTask && activeTask.status === "active") {
+      setPendingNewTask(data);
+      setShowSwitchModal(true);
+      return;
+    }
+    
+    // No active task, create and start normally
     await addTask(data.title, data.estimated_minutes, true);
-    setOverlay(false);
+  };
+
+  const handleConfirmTaskSwitch = async () => {
+    setShowSwitchModal(false);
+    if (pendingNewTask) {
+      await addTask(pendingNewTask.title, pendingNewTask.estimated_minutes, true);
+      setPendingNewTask(null);
+    }
+  };
+
+  const handleCancelTaskSwitch = () => {
+    setShowSwitchModal(false);
+    setPendingNewTask(null);
   };
 
   // =========================
@@ -218,6 +262,15 @@ export default function Dashboard() {
           onClose={() => setOverlay(false)}
           onAddQueue={handleAddTask}
           onAddStart={handleAddAndStart}
+        />
+      )}
+
+      {showSwitchModal && activeTask && (
+        <TaskSwitchModal
+          currentTask={activeTask.title}
+          newTaskTitle={pendingNewTask?.title || ""}
+          onConfirm={handleConfirmTaskSwitch}
+          onCancel={handleCancelTaskSwitch}
         />
       )}
     </>
