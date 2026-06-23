@@ -6,6 +6,7 @@ import useTasks from "../hooks/useTasks";
 // Components
 import TaskOverlay from "../components/dashboard/TaskOverlay";
 import TaskSwitchModal from "../components/dashboard/TaskSwitchModal";
+import SettingsModal from "../components/dashboard/SettingsModal";
 import FocusSessionCard from "../components/dashboard/FocusSessionCard";
 import ActiveTaskCard from "../components/dashboard/ActiveTaskCard";
 import AmbientSoundCard from "../components/dashboard/AmbientSoundCard";
@@ -39,6 +40,7 @@ export default function Dashboard() {
   const [volume, setVolume] = useState(60);
   const [overlay, setOverlay] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [pendingNewTask, setPendingNewTask] = useState(null);
   const [prevTaskId, setPrevTaskId] = useState(null);
 
@@ -208,7 +210,7 @@ export default function Dashboard() {
           padding: "20px 24px 32px",
         }}
       >
-        <DashboardHeader />
+        <DashboardHeader onSettingsClick={() => setShowSettings(true)} />
 
         {loading && <p>Loading...</p>}
         {error && <p style={{ color: "red" }}>{error.message}</p>}
@@ -272,6 +274,10 @@ export default function Dashboard() {
           onConfirm={handleConfirmTaskSwitch}
           onCancel={handleCancelTaskSwitch}
         />
+      )}
+
+      {showSettings && (
+        <SettingsModal onClose={() => setShowSettings(false)} />
       )}
     </>
   );
