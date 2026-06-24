@@ -1,62 +1,19 @@
-import { useState, useEffect } from "react";
-import { Icon, IC } from "./Icons";
-import api from "../../lib/api";
+import useSettings from '../../hooks/useSettings';
 
 export default function SettingsModal({ onClose }) {
-  const [settings, setSettings] = useState({
-    preferred_sprint_duration: 25,
-    short_break_duration: 5,
-    long_break_duration: 15,
-    sprints_before_long_break: 4,
-    daily_target_minutes: 120,
-    weekly_target_minutes: 600,
-    default_ambient_sound: "none",
-    default_ambient_volume: 50,
-    sound_effects_enabled: true,
-    theme: "dark",
-  });
-
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-
-  // Load settings
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const { data } = await api.get("/settings");
-        setSettings(data);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error loading settings:", err);
-        setLoading(false);
-      }
-    };
-    fetchSettings();
-  }, []);
-
-  const handleChange = (field, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  const {
+    settings,
+    updateSetting,
+    saveSettings,
+    loading,
+    saving,
+    message,
+  } = useSettings();
 
   const handleSave = async () => {
-    setSaving(true);
-    try {
-      await api.post("/settings", settings);
-      setMessage("✓ Settings saved successfully!");
-      setTimeout(() => {
-        setMessage("");
-        onClose();
-      }, 1500);
-    } catch (err) {
-      setMessage("✗ Error saving settings");
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
+    await saveSettings();
+    // auto-close after success message like original
+    setTimeout(() => onClose(), 1500);
   };
 
   if (loading) {
@@ -139,34 +96,26 @@ export default function SettingsModal({ onClose }) {
               <SettingInput
                 label="Sprint Duration"
                 value={settings.preferred_sprint_duration}
-                onChange={(val) => handleChange("preferred_sprint_duration", val)}
-                min={5}
-                max={60}
-                unit="min"
+                onChange={(val) => updateSetting("preferred_sprint_duration", val)}
+                min={5} max={60} unit="min"
               />
               <SettingInput
                 label="Short Break"
                 value={settings.short_break_duration}
-                onChange={(val) => handleChange("short_break_duration", val)}
-                min={1}
-                max={30}
-                unit="min"
+                onChange={(val) => updateSetting("short_break_duration", val)}
+                min={1} max={30} unit="min"
               />
               <SettingInput
                 label="Long Break"
                 value={settings.long_break_duration}
-                onChange={(val) => handleChange("long_break_duration", val)}
-                min={5}
-                max={60}
-                unit="min"
+                onChange={(val) => updateSetting("long_break_duration", val)}
+                min={5} max={60} unit="min"
               />
               <SettingInput
                 label="Sprints Before Long Break"
                 value={settings.sprints_before_long_break}
-                onChange={(val) => handleChange("sprints_before_long_break", val)}
-                min={2}
-                max={10}
-                unit=""
+                onChange={(val) => updateSetting("sprints_before_long_break", val)}
+                min={2} max={10} unit=""
               />
             </div>
           </div>
@@ -180,18 +129,14 @@ export default function SettingsModal({ onClose }) {
               <SettingInput
                 label="Daily Target"
                 value={settings.daily_target_minutes}
-                onChange={(val) => handleChange("daily_target_minutes", val)}
-                min={30}
-                max={480}
-                unit="min"
+                onChange={(val) => updateSetting("daily_target_minutes", val)}
+                min={30} max={480} unit="min"
               />
               <SettingInput
                 label="Weekly Target"
                 value={settings.weekly_target_minutes}
-                onChange={(val) => handleChange("weekly_target_minutes", val)}
-                min={100}
-                max={2400}
-                unit="min"
+                onChange={(val) => updateSetting("weekly_target_minutes", val)}
+                min={100} max={2400} unit="min"
               />
             </div>
           </div>
@@ -205,7 +150,7 @@ export default function SettingsModal({ onClose }) {
               <SettingInput
                 label="Default Ambient Sound"
                 value={settings.default_ambient_sound}
-                onChange={(val) => handleChange("default_ambient_sound", val)}
+                onChange={(val) => updateSetting("default_ambient_sound", val)}
                 type="select"
                 options={["none", "rain", "birds", "noise", "lofi"]}
               />
@@ -216,10 +161,9 @@ export default function SettingsModal({ onClose }) {
                 </div>
                 <input
                   type="range"
-                  min={0}
-                  max={100}
+                  min={0} max={100}
                   value={settings.default_ambient_volume}
-                  onChange={(e) => handleChange("default_ambient_volume", Number(e.target.value))}
+                  onChange={(e) => updateSetting("default_ambient_volume", Number(e.target.value))}
                   style={{
                     width: "100%",
                     background: `linear-gradient(90deg, #2dd4bf ${settings.default_ambient_volume}%, rgba(255,255,255,0.1) ${settings.default_ambient_volume}%)`,
@@ -229,7 +173,7 @@ export default function SettingsModal({ onClose }) {
               <SettingToggle
                 label="Sound Effects"
                 value={settings.sound_effects_enabled}
-                onChange={(val) => handleChange("sound_effects_enabled", val)}
+                onChange={(val) => updateSetting("sound_effects_enabled", val)}
               />
             </div>
           </div>
@@ -242,7 +186,7 @@ export default function SettingsModal({ onClose }) {
             <SettingInput
               label="Theme"
               value={settings.theme}
-              onChange={(val) => handleChange("theme", val)}
+              onChange={(val) => updateSetting("theme", val)}
               type="select"
               options={["dark", "light"]}
             />
@@ -310,6 +254,8 @@ export default function SettingsModal({ onClose }) {
   );
 }
 
+// ── helper components unchanged ────────────────────────────────────────────
+
 function SettingInput({ label, value, onChange, min, max, unit, type = "number", options = [] }) {
   if (type === "select") {
     return (
@@ -352,8 +298,7 @@ function SettingInput({ label, value, onChange, min, max, unit, type = "number",
           type="number"
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          min={min}
-          max={max}
+          min={min} max={max}
           style={{
             flex: 1,
             background: "rgba(255,255,255,0.06)",
@@ -365,9 +310,7 @@ function SettingInput({ label, value, onChange, min, max, unit, type = "number",
             fontFamily: "inherit",
           }}
         />
-        {unit && (
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", minWidth: 30 }}>{unit}</span>
-        )}
+        {unit && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", minWidth: 30 }}>{unit}</span>}
       </div>
     </div>
   );
@@ -376,34 +319,21 @@ function SettingInput({ label, value, onChange, min, max, unit, type = "number",
 function SettingToggle({ label, value, onChange }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <label style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
-        {label}
-      </label>
+      <label style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>{label}</label>
       <button
         onClick={() => onChange(!value)}
         style={{
-          width: 48,
-          height: 28,
-          borderRadius: 14,
+          width: 48, height: 28, borderRadius: 14,
           background: value ? "linear-gradient(135deg, #2dd4bf, #0694a2)" : "rgba(255,255,255,0.1)",
-          border: "none",
-          cursor: "pointer",
-          position: "relative",
+          border: "none", cursor: "pointer", position: "relative",
           transition: "all 0.3s ease",
         }}
       >
-        <div
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: 12,
-            background: "#fff",
-            position: "absolute",
-            top: 2,
-            left: value ? 22 : 2,
-            transition: "left 0.3s ease",
-          }}
-        />
+        <div style={{
+          width: 24, height: 24, borderRadius: 12, background: "#fff",
+          position: "absolute", top: 2, left: value ? 22 : 2,
+          transition: "left 0.3s ease",
+        }} />
       </button>
     </div>
   );
