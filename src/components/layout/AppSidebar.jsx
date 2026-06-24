@@ -37,8 +37,8 @@ export default function AppSidebar({ darkMode, onClose }) {
                 ? 'bg-white/10 text-white'
                 : 'bg-slate-200 text-slate-900'
               : darkMode
-                ? 'text-white/60 hover:text-white hover:bg-white/5'
-                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+              ? 'text-white/60 hover:text-white hover:bg-white/5'
+              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <span className="text-lg">{icon}</span>
@@ -50,7 +50,7 @@ export default function AppSidebar({ darkMode, onClose }) {
 
   return (
     <div
-      className={`w-64 h-screen flex flex-col border-r p-5 ${
+      className={`w-64 h-screen overflow-y-auto flex flex-col border-r p-5 ${
         darkMode
           ? 'border-white/10 bg-obsidian-950 text-white'
           : 'border-slate-200 bg-white text-slate-900'
@@ -60,7 +60,9 @@ export default function AppSidebar({ darkMode, onClose }) {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-xl font-bold">FocusApp</h1>
-          <p className="text-xs opacity-50">Productivity dashboard</p>
+          <p className="text-xs opacity-50">
+            Productivity dashboard
+          </p>
         </div>
 
         {/* Close button (mobile only) */}
@@ -74,8 +76,17 @@ export default function AppSidebar({ darkMode, onClose }) {
 
       {/* NAV LINKS */}
       <div className="flex-1 space-y-2">
-        <Item to="/dashboard" label="Dashboard" icon="📊" />
-        <Item to="/settings" label="Settings" icon="⚙️" />
+        <Item
+          to="/dashboard"
+          label="Dashboard"
+          icon="📊"
+        />
+
+        <Item
+          to="/settings"
+          label="Settings"
+          icon="⚙️"
+        />
       </div>
 
       {/* LOGOUT */}

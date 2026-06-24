@@ -5,10 +5,13 @@ export default function AppLayout({ children, darkMode }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className={`flex min-h-screen ${
-      darkMode ? 'bg-obsidian-950 text-white' : 'bg-slate-50 text-slate-900'
-    }`}>
-
+    <div
+      className={`flex h-screen overflow-hidden ${
+        darkMode
+          ? 'bg-obsidian-950 text-white'
+          : 'bg-slate-50 text-slate-900'
+      }`}
+    >
       {/* Mobile overlay */}
       {open && (
         <div
@@ -18,34 +21,39 @@ export default function AppLayout({ children, darkMode }) {
       )}
 
       {/* Sidebar */}
-      <div className={`
-        fixed lg:static z-50
-        transform transition-transform duration-300
-        ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        <AppSidebar darkMode={darkMode} onClose={() => setOpen(false)} />
+      <div
+        className={`
+          fixed top-0 left-0 z-50
+          transform transition-transform duration-300
+          ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        <AppSidebar
+          darkMode={darkMode}
+          onClose={() => setOpen(false)}
+        />
       </div>
 
-      {/* Main */}
-      <div className="flex-1 p-6 lg:ml-0">
+      {/* Main Content */}
+      <div className="flex-1 h-screen overflow-y-auto lg:ml-64">
+        <div className="p-6">
+          {/* Mobile top bar */}
+          <div className="flex items-center justify-between mb-4 lg:hidden">
+            <button
+              onClick={() => setOpen(true)}
+              className={`px-3 py-2 rounded-lg ${
+                darkMode ? 'bg-white/10' : 'bg-slate-200'
+              }`}
+            >
+              ☰
+            </button>
 
-        {/* Mobile top bar */}
-        <div className="flex items-center justify-between mb-4 lg:hidden">
-          <button
-            onClick={() => setOpen(true)}
-            className={`px-3 py-2 rounded-lg ${
-              darkMode ? 'bg-white/10' : 'bg-slate-200'
-            }`}
-          >
-            ☰
-          </button>
+            <h2 className="font-bold">FocusApp</h2>
+          </div>
 
-          <h2 className="font-bold">FocusApp</h2>
+          {children}
         </div>
-
-        {children}
       </div>
-
     </div>
   )
 }
