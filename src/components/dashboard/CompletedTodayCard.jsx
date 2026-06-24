@@ -16,7 +16,7 @@ export default function CompletedTodayCard({ completedList }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <span style={{ fontSize: 13, color: "rgba(255,255,255,0.75)" }}>{c.label}</span>
-            {c.seg && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.32)", marginLeft: 5 }}>({c.seg})</span>}
+           
           </div>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.28)", fontFamily: "'DM Mono', monospace", whiteSpace: "nowrap", flexShrink: 0 }}>
             {c.time} ({c.dur})

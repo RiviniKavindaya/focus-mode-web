@@ -26,7 +26,7 @@ export default function useTasks() {
           label: task.title,
           seg: task.completed_sprints,
           time: timeStr,
-          dur: `${task.actual_minutes}m`,
+          dur: `${Math.round(task.actual_minutes)}m`,
         };
       });
       setCompletedToday(formattedCompleted);
