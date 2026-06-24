@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 
 // Hook
 import useTasks from "../hooks/useTasks";
+import useSettings from "../hooks/useSettings"; 
 
 // Components
 import TaskOverlay from "../components/dashboard/TaskOverlay";
@@ -32,12 +33,15 @@ export default function Dashboard() {
     completeTask,
   } = useTasks();
 
+  const { settings, loading: settingsLoading } = useSettings();
+
   const [timerSecs, setTimerSecs] = useState(0);
   const [totalSecs, setTotalSecs] = useState(0);
   const [running, setRunning] = useState(false);
 
-  const [sound, setSound] = useState("rain");
+  const [sound, setSound] = useState("none");
   const [volume, setVolume] = useState(60);
+
   const [overlay, setOverlay] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -108,6 +112,15 @@ export default function Dashboard() {
 
     return () => clearInterval(intervalRef.current);
   }, [running, activeTask, pauseTask]);
+
+
+  // sound setting
+   useEffect(() => {
+    if (!settingsLoading && settings) {
+      setSound(settings.default_ambient_sound ?? "rain");
+      setVolume(settings.default_ambient_volume ?? 60);
+    }
+  }, [settingsLoading, settings]);
 
   // =========================
   // SPRINT COUNT (FROM BACKEND)
