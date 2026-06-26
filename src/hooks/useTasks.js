@@ -78,6 +78,14 @@ export default function useTasks() {
     await loadTasks();
   };
 
+  // COMPLETE ONE SPRINT (NOT FULL TASK)
+  const completeSprint = async (taskId) => {
+    await taskService.completeSprint(taskId);
+    await loadTasks();
+  };
+
+  
+
   // INITIAL LOAD RUNNER
   useEffect(() => {
     loadTasks();
@@ -95,5 +103,6 @@ export default function useTasks() {
     pauseTask,
     completeTask,
     deleteTask,
+    completeSprint,
   };
 }

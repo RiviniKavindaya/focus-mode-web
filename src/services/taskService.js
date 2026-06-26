@@ -24,4 +24,8 @@ export const taskService = {
   deleteTask(taskId) {
     return api.delete(`/tasks/${taskId}`);
   },
+
+  completeSprint(taskId) {
+    return api.post(`/tasks/${taskId}/complete-sprint`);
+  },
 };

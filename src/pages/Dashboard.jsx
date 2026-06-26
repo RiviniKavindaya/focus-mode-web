@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 
-// Hook
+// =========================
+// HOOKS
+// =========================
 import useTasks from "../hooks/useTasks";
-import useSettings from "../hooks/useSettings"; 
+import useSettings from "../hooks/useSettings";
 
-// Components
+// =========================
+// COMPONENTS
+// =========================
 import TaskOverlay from "../components/dashboard/TaskOverlay";
 import TaskSwitchModal from "../components/dashboard/TaskSwitchModal";
 import SettingsModal from "../components/dashboard/SettingsModal";
@@ -15,11 +19,18 @@ import ProgressCard from "../components/dashboard/ProgressCard";
 import TaskQueueCard from "../components/dashboard/TaskQueueCard";
 import CompletedTodayCard from "../components/dashboard/CompletedTodayCard";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
+import SprintCompleteModal from "../components/dashboard/SprintCompleteModal";
 
-// Styles
+// =========================
+// STYLES
+// =========================
 import { globalStyles } from "../styles/dashboardStyles";
 
 export default function Dashboard() {
+
+  // =========================
+  // TASK DATA (BACKEND)
+  // =========================
   const {
     queue,
     completedToday,
@@ -31,64 +42,81 @@ export default function Dashboard() {
     startTask,
     pauseTask,
     completeTask,
+    completeSprint,
   } = useTasks();
 
+  // =========================
+  // USER SETTINGS
+  // =========================
   const { settings, loading: settingsLoading } = useSettings();
 
+  // =========================
+  // TIMER STATE (UI ONLY)
+  // =========================
   const [timerSecs, setTimerSecs] = useState(0);
   const [totalSecs, setTotalSecs] = useState(0);
   const [running, setRunning] = useState(false);
 
+  // =========================
+  // UI STATE
+  // =========================
   const [sound, setSound] = useState("none");
   const [volume, setVolume] = useState(60);
 
   const [overlay, setOverlay] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
+  const [showSprintModal, setShowSprintModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
   const [pendingNewTask, setPendingNewTask] = useState(null);
   const [prevTaskId, setPrevTaskId] = useState(null);
 
+  // =========================
+  // TIMER REF (AVOID MEMORY LEAKS)
+  // =========================
   const intervalRef = useRef(null);
 
-  // Auto-close overlay when active task starts
+  // =========================================================
+  // CLOSE OVERLAY WHEN TASK BECOMES ACTIVE
+  // =========================================================
   useEffect(() => {
     if (activeTask && overlay) {
       setOverlay(false);
     }
-    
-    // Track if task switched (task ID changed)
-    if (activeTask?.id && prevTaskId && activeTask.id !== prevTaskId) {
-      // Task was switched - this is expected
-    }
+
     setPrevTaskId(activeTask?.id || null);
   }, [activeTask]);
 
-  // =========================
-  // SYNC WITH BACKEND TASK
-  // =========================
+  // =========================================================
+  // SYNC ACTIVE TASK WITH TIMER
+  // (backend is source of truth)
+  // =========================================================
   useEffect(() => {
-    if (activeTask) {
-      const sprintDuration = (activeTask.sprint_duration_minutes || 25) * 60;
-      setTotalSecs(sprintDuration);
-      
-      // If current_sprint_seconds is 0 (fresh sprint), start with full duration
-      // Otherwise use the current progress
-      const timerValue = activeTask.current_sprint_seconds > 0 
-        ? activeTask.current_sprint_seconds 
-        : sprintDuration;
-      
-      setTimerSecs(timerValue);
-      setRunning(activeTask.status === "active");
-    } else {
+    if (!activeTask) {
       setTimerSecs(0);
       setTotalSecs(0);
       setRunning(false);
+      return;
     }
-  }, [activeTask]);
 
-  // =========================
-  // TIMER ENGINE
-  // =========================
+    const sprintDuration =
+      (activeTask.sprint_duration_minutes || 25) * 60;
+
+    setTotalSecs(sprintDuration);
+
+    const current =
+      activeTask.current_sprint_seconds > 0
+        ? activeTask.current_sprint_seconds
+        : sprintDuration;
+
+    setTimerSecs(current);
+
+    setRunning(activeTask.status === "active");
+  }, [activeTask?.id]);
+
+  // =========================================================
+  // TIMER ENGINE (SAFE + NO DOUBLE EXECUTION)
+  // =========================================================
   useEffect(() => {
     if (!running || !activeTask) {
       clearInterval(intervalRef.current);
@@ -101,8 +129,10 @@ export default function Dashboard() {
           clearInterval(intervalRef.current);
           setRunning(false);
 
-          pauseTask(activeTask.id);
-          alert("Sprint completed! You can now review and complete the task.");
+          // IMPORTANT: defer backend call safely
+          setTimeout(() => {
+            handleSprintComplete();
+          }, 0);
 
           return 0;
         }
@@ -111,27 +141,73 @@ export default function Dashboard() {
     }, 1000);
 
     return () => clearInterval(intervalRef.current);
-  }, [running, activeTask, pauseTask]);
+  }, [running, activeTask]);
 
+  // =========================================================
+  // SPRINT COMPLETION HANDLER (CRITICAL FIX)
+  // =========================================================
+  const handleSprintComplete = async () => {
+    if (!activeTask) return;
 
-  // sound setting
-   useEffect(() => {
+    try {
+      // 1. Tell backend sprint ended
+      await completeSprint(activeTask.id);
+
+      // 2. Refresh tasks from backend
+      await loadTasks();
+
+      // 3. Open modal AFTER sync
+      setShowSprintModal(true);
+
+    } catch (err) {
+      console.error("Sprint completion failed:", err);
+    }
+  };
+
+  // =========================================================
+  // MODAL ACTIONS (SPRINT FLOW)
+  // =========================================================
+
+  const handleStartNextSprint = async () => {
+    setShowSprintModal(false);
+    await startTask(activeTask.id);
+  };
+
+  const handlePauseAfterSprint = async () => {
+    setShowSprintModal(false);
+    await pauseTask(activeTask.id);
+  };
+
+  const handleCompleteEarly = async () => {
+    setShowSprintModal(false);
+    await completeTask(activeTask.id, {
+      was_sprint_finished: false,
+    });
+  };
+
+  // =========================================================
+  // SETTINGS SYNC
+  // =========================================================
+  useEffect(() => {
     if (!settingsLoading && settings) {
       setSound(settings.default_ambient_sound ?? "rain");
       setVolume(settings.default_ambient_volume ?? 60);
     }
   }, [settingsLoading, settings]);
 
-  // =========================
-  // SPRINT COUNT (FROM BACKEND)
-  // =========================
+  // =========================================================
+  // SPRINT COUNT LOGIC
+  // =========================================================
   const sprintCount = activeTask
-    ? Math.ceil(activeTask.estimated_minutes / activeTask.sprint_duration_minutes)
+    ? Math.ceil(
+        activeTask.estimated_minutes /
+          activeTask.sprint_duration_minutes
+      )
     : 1;
 
-  // =========================
-  // PLAY / PAUSE (BACKEND SYNC)
-  // =========================
+  // =========================================================
+  // PLAY / PAUSE CONTROL
+  // =========================================================
   const handleTogglePlayPause = async () => {
     if (!activeTask) return;
 
@@ -144,37 +220,38 @@ export default function Dashboard() {
     }
   };
 
-  // =========================
-  // START TASK
-  // =========================
+  // =========================================================
+  // TASK ACTIONS (UNCHANGED SAFE LOGIC)
+  // =========================================================
+
   const handleStartTask = async (task) => {
     await startTask(task.id);
   };
 
-  // =========================
-  // ADD TASK
-  // =========================
   const handleAddTask = async (data) => {
     await addTask(data.title, data.estimated_minutes, false);
     setOverlay(false);
   };
 
   const handleAddAndStart = async (data) => {
-    // If there's an active task, show modal instead of browser confirm
     if (activeTask && activeTask.status === "active") {
       setPendingNewTask(data);
       setShowSwitchModal(true);
       return;
     }
-    
-    // No active task, create and start normally
+
     await addTask(data.title, data.estimated_minutes, true);
   };
 
   const handleConfirmTaskSwitch = async () => {
     setShowSwitchModal(false);
+
     if (pendingNewTask) {
-      await addTask(pendingNewTask.title, pendingNewTask.estimated_minutes, true);
+      await addTask(
+        pendingNewTask.title,
+        pendingNewTask.estimated_minutes,
+        true
+      );
       setPendingNewTask(null);
     }
   };
@@ -184,13 +261,11 @@ export default function Dashboard() {
     setPendingNewTask(null);
   };
 
-  // =========================
-  // END SESSION (IMPORTANT FIX)
-  // =========================
   const handleEndSession = async () => {
     if (!activeTask) return;
 
     setRunning(false);
+
     await completeTask(activeTask.id, {
       was_sprint_finished: false,
     });
@@ -198,21 +273,35 @@ export default function Dashboard() {
     await loadTasks();
   };
 
-  // =========================
-  // RESET TIMER ONLY
-  // =========================
+  const handleCompleteTask = async () => {
+    if (!activeTask) return;
+
+    setShowSprintModal(false);
+
+    await completeTask(activeTask.id, {
+      was_sprint_finished: true,
+    });
+
+    await loadTasks();
+  };
+
   const handleResetTimer = () => {
     setRunning(false);
     setTimerSecs(totalSecs);
   };
 
+  // =========================================================
+  // UI RENDER
+  // =========================================================
   return (
     <>
+      {/* Fonts */}
       <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
         rel="stylesheet"
       />
 
+      {/* Global styles */}
       <style>{globalStyles}</style>
 
       <div
@@ -220,16 +309,27 @@ export default function Dashboard() {
           fontFamily: "'DM Sans', sans-serif",
           color: "#e2e8f0",
           minHeight: "100vh",
-          padding: "20px 24px 32px",
+          padding: "20px 24px",
         }}
       >
-        <DashboardHeader onSettingsClick={() => setShowSettings(true)} />
+        {/* HEADER */}
+        <DashboardHeader
+          onSettingsClick={() => setShowSettings(true)}
+        />
 
+        {/* LOADING / ERROR */}
         {loading && <p>Loading...</p>}
         {error && <p style={{ color: "red" }}>{error.message}</p>}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 20 }}>
-          {/* LEFT */}
+        {/* MAIN GRID */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 400px",
+            gap: 20,
+          }}
+        >
+          {/* LEFT SIDE */}
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             <FocusSessionCard
               activeTask={activeTask}
@@ -257,7 +357,7 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* RIGHT */}
+          {/* RIGHT SIDE */}
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             <ProgressCard />
 
@@ -272,6 +372,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* TASK OVERLAY */}
       {overlay && (
         <TaskOverlay
           onClose={() => setOverlay(false)}
@@ -280,6 +381,7 @@ export default function Dashboard() {
         />
       )}
 
+      {/* SWITCH TASK MODAL */}
       {showSwitchModal && activeTask && (
         <TaskSwitchModal
           currentTask={activeTask.title}
@@ -289,6 +391,18 @@ export default function Dashboard() {
         />
       )}
 
+      {/* SPRINT COMPLETE MODAL */}
+      {showSprintModal && activeTask && (
+        <SprintCompleteModal
+          activeTask={activeTask}
+          sprintCount={sprintCount}
+          onStartNext={handleStartNextSprint}
+          onPause={handlePauseAfterSprint}
+          onCompleteTask={handleEndSession}
+        />
+      )}
+
+      {/* SETTINGS MODAL */}
       {showSettings && (
         <SettingsModal onClose={() => setShowSettings(false)} />
       )}
